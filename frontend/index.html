@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0e9488" />
+  <title>My Doc+ — Book doctors, instantly</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🩺</text></svg>" />
+</head>
+<body>
+  <!-- Top app bar -->
+  <header class="appbar" id="appbar">
+    <div class="appbar-inner">
+      <a class="brand" href="#/" data-link>
+        <span class="brand-mark">🩺</span>
+        <span class="brand-name">My Doc<span class="plus">+</span></span>
+      </a>
+      <nav class="nav" id="nav"></nav>
+      <div class="appbar-actions">
+        <button class="icon-btn" id="themeToggle" title="Toggle theme" aria-label="Toggle theme">🌙</button>
+        <div id="authArea" class="auth-area"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Route target -->
+  <main id="app" class="app"></main>
+
+  <!-- Toast + modal hosts -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="modalRoot"></div>
+
+  <footer class="footer">
+    <span>My Doc+ · zero-dependency MVP · built for demo</span>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# Runtime database (regenerated + seeded on start)
+mydocplus.db
+mydocplus.db-journal
+
+# pyenv local version pin
+# (kept in repo intentionally so the right Python is selected)
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
