@@ -243,3 +243,35 @@ h1,h2,h3 { line-height: 1.2; }
   .hero h1 { font-size: 24px; }
   .appbar-inner { padding: 10px 14px; }
 }
+
+
+/* ------------------- AI Assistant ------------------- */
+.fab {
+  position: fixed; right: 22px; bottom: 22px; z-index: 55;
+  width: 58px; height: 58px; border-radius: 50%; border: none; cursor: pointer;
+  background: linear-gradient(135deg, var(--primary), var(--primary-600));
+  color: #fff; font-size: 26px; box-shadow: var(--shadow-lg);
+  display: grid; place-items: center; transition: transform .15s ease;
+  animation: fabpulse 2.6s ease-in-out infinite;
+}
+.fab:hover { transform: scale(1.08); }
+@keyframes fabpulse {
+  0%, 100% { box-shadow: 0 12px 40px rgba(14,148,136,.35); }
+  50% { box-shadow: 0 12px 50px rgba(14,148,136,.6); }
+}
+
+.ai-chat {
+  max-height: 44vh; overflow-y: auto; margin-top: 12px;
+  display: flex; flex-direction: column; gap: 10px; padding: 4px;
+}
+.ai-bubble {
+  padding: 11px 14px; border-radius: 14px; font-size: 14px; max-width: 88%;
+  line-height: 1.45;
+}
+.ai-bubble.user { align-self: flex-end; background: var(--primary); color: #fff; border-bottom-right-radius: 4px; }
+.ai-bubble.bot { align-self: flex-start; background: var(--surface-2); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+.ai-suggestions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+@media (max-width: 720px) {
+  .fab { right: 16px; bottom: 16px; width: 52px; height: 52px; font-size: 22px; }
+}

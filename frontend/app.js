@@ -595,15 +595,91 @@ route("/admin", async (app) => {
     </table>` : '<div class="empty">No appointments.</div>';
 });
 
+/* ----------------------- AI Symptom Assistant ----------------------- */
+const URGENCY = {
+  emergency: { label: "Emergency", cls: "cancelled", emoji: "🚨" },
+  soon: { label: "See a doctor soon", cls: "pending", emoji: "⚠️" },
+  routine: { label: "Routine", cls: "confirmed", emoji: "🟢" },
+};
+
+function assistantDoctorCard(d) {
+  return `<div class="card hover doc-card" style="cursor:pointer;padding:12px"
+      onclick="closeModal();location.hash='#/doctor/${d.id}'">
+    <div class="doc-photo" style="width:44px;height:44px;font-size:16px">${initials(d.name)}</div>
+    <div class="doc-main">
+      <div class="doc-name" style="font-size:14px">${esc(d.name)}</div>
+      <div class="doc-meta"><span class="stars">${stars(d.rating)}</span> ${d.rating} · <strong>${money(d.consultation_fee)}</strong></div>
+    </div>
+    <button class="btn sm">Book</button>
+  </div>`;
+}
+
+function openAssistant() {
+  modal(`<div class="between"><h3 style="margin:0">🤖 AI Symptom Assistant</h3>
+      <button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <p class="muted" style="font-size:13px;margin-top:6px">Tell me how you're feeling and I'll suggest the right specialist. This isn't a diagnosis.</p>
+    <div id="aiChat" class="ai-chat"></div>
+    <div class="ai-suggestions" id="aiSug">
+      ${["I have a bad headache and feel dizzy", "Skin rash and itching", "Chest pain and short of breath", "My child has a fever", "Toothache since 2 days"]
+        .map(s => `<span class="chip" onclick="aiAsk('${s.replace(/'/g, "\\'")}')">${s}</span>`).join("")}
+    </div>
+    <div class="searchbar mt">
+      <span>💬</span>
+      <input id="aiInput" placeholder="Describe your symptoms..." />
+      <button class="btn" id="aiSend">Ask</button>
+    </div>`);
+
+  const send = () => { const v = $("#aiInput").value.trim(); if (v) aiAsk(v); };
+  $("#aiSend").onclick = send;
+  $("#aiInput").addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
+  setTimeout(() => $("#aiInput") && $("#aiInput").focus(), 50);
+}
+
+async function aiAsk(text) {
+  const chat = $("#aiChat");
+  const sug = $("#aiSug");
+  if (sug) sug.style.display = "none";
+  if ($("#aiInput")) $("#aiInput").value = "";
+  chat.innerHTML += `<div class="ai-bubble user">${esc(text)}</div>`;
+  chat.innerHTML += `<div class="ai-bubble bot" id="aiThinking">Thinking…</div>`;
+  chat.scrollTop = chat.scrollHeight;
+  try {
+    const r = await api("/ai/triage", { method: "POST", auth: false, body: { symptoms: text } });
+    const u = URGENCY[r.urgency] || URGENCY.routine;
+    const msgHtml = esc(r.message).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    let html = `<div><span class="pill ${u.cls}">${u.emoji} ${u.label}</span></div>
+      <div class="mt">${msgHtml}</div>`;
+    if (r.doctors && r.doctors.length) {
+      html += `<div class="mt" style="font-weight:700;font-size:13px">Recommended doctors</div>
+        <div class="grid mt" style="gap:8px">${r.doctors.map(assistantDoctorCard).join("")}</div>`;
+    }
+    html += `<div class="muted mt" style="font-size:11px">ℹ️ ${esc(r.disclaimer)}</div>`;
+    $("#aiThinking").outerHTML = `<div class="ai-bubble bot">${html}</div>`;
+  } catch (e) {
+    $("#aiThinking").outerHTML = `<div class="ai-bubble bot">Sorry, something went wrong: ${esc(e.message)}</div>`;
+  }
+  chat.scrollTop = chat.scrollHeight;
+}
+
 /* ----------------------- boot ----------------------- */
 document.addEventListener("click", (e) => {
   const a = e.target.closest("a[data-link]");
   if (a) { /* hash links handled natively */ }
 });
 window.addEventListener("hashchange", router);
+
+// Floating AI assistant button
+const fab = document.createElement("button");
+fab.className = "fab";
+fab.id = "aiFab";
+fab.title = "AI Symptom Assistant";
+fab.innerHTML = "🤖";
+fab.onclick = openAssistant;
+document.body.appendChild(fab);
+
 initTheme();
 renderChrome();
 router();
 
 // expose handlers used in inline onclick
-Object.assign(window, { logout, closeModal, cancelAppt, completeAppt, showPrescription, toast });
+Object.assign(window, { logout, closeModal, cancelAppt, completeAppt, showPrescription, toast, openAssistant, aiAsk });
