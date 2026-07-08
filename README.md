@@ -25,6 +25,38 @@ on first run.
 | `MYDOCPLUS_PORT` | `8000` | HTTP port |
 | `MYDOCPLUS_SECRET` | dev secret | JWT signing key (set in production!) |
 | `MYDOCPLUS_DB` | `./mydocplus.db` | SQLite file path |
+| `MYDOCPLUS_AI_KEY` | _(unset)_ | AI provider API key — enables real conversational AI mode |
+| `MYDOCPLUS_AI_PROVIDER` | `gemini` | `gemini` \| `openai` \| `groq` |
+| `MYDOCPLUS_AI_MODEL` | provider default | override the model name |
+
+## 🤖 AI Assistant
+
+The floating **🤖 button** opens a health chat assistant. It runs in two modes:
+
+- **Basic mode** (default, no key needed): rule-based — suggests the right
+  specialist and recommends doctors. Works fully offline.
+- **AI mode** (set an API key): a real large-language-model chat that answers
+  open-ended health and general questions conversationally.
+
+Emergencies (chest pain, trouble breathing, etc.) always show a "seek emergency
+care" message and never call the AI.
+
+### Enable full AI mode with a free Google Gemini key
+1. Go to <https://aistudio.google.com/app/apikey> and sign in with a Google account.
+2. Click **Create API key** and copy it.
+3. Start the app with the key set:
+   ```bash
+   # macOS / Linux / Codespaces
+   MYDOCPLUS_AI_KEY="paste-your-key-here" python run.py
+
+   # Windows PowerShell
+   $env:MYDOCPLUS_AI_KEY="paste-your-key-here"; python run.py
+   ```
+4. Open the 🤖 assistant — it will show **✨ AI mode** at the top.
+
+> Prefer OpenAI or Groq? Set `MYDOCPLUS_AI_PROVIDER=openai` (or `groq`) along
+> with `MYDOCPLUS_AI_KEY`. No code changes, no extra installs — the client uses
+> only the Python standard library.
 
 ## Demo accounts
 | role | email | password |

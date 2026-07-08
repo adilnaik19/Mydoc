@@ -614,25 +614,48 @@ function assistantDoctorCard(d) {
   </div>`;
 }
 
-function openAssistant() {
-  modal(`<div class="between"><h3 style="margin:0">🤖 AI Symptom Assistant</h3>
+let aiHistory = [];  // [{role:'user'|'assistant', content}]
+
+// minimal markdown -> html (bold, italics, newlines) with escaping
+function mdLite(s) {
+  return esc(s)
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[^*])\*(?!\*)([^*]+?)\*(?!\*)/g, "$1<em>$2</em>")
+    .replace(/_(.+?)_/g, "<em>$1</em>")
+    .replace(/\n/g, "<br>");
+}
+
+async function openAssistant() {
+  aiHistory = [];
+  modal(`<div class="between"><h3 style="margin:0">🤖 Health Assistant</h3>
       <button class="icon-btn" onclick="closeModal()">✕</button></div>
-    <p class="muted" style="font-size:13px;margin-top:6px">Tell me how you're feeling and I'll suggest the right specialist. This isn't a diagnosis.</p>
-    <div id="aiChat" class="ai-chat"></div>
+    <div class="ai-mode muted" id="aiMode" style="font-size:12px;margin-top:4px">Checking assistant mode…</div>
+    <div id="aiChat" class="ai-chat">
+      <div class="ai-bubble bot">Hi! I'm your My Doc+ health assistant. Ask me about symptoms, medicines, general health, or how to book a doctor. 🙂</div>
+    </div>
     <div class="ai-suggestions" id="aiSug">
-      ${["I have a bad headache and feel dizzy", "Skin rash and itching", "Chest pain and short of breath", "My child has a fever", "Toothache since 2 days"]
+      ${["I have a headache and feel dizzy", "What foods help lower blood pressure?", "Skin rash and itching", "Which doctor for knee pain?", "Tips to sleep better"]
         .map(s => `<span class="chip" onclick="aiAsk('${s.replace(/'/g, "\\'")}')">${s}</span>`).join("")}
     </div>
     <div class="searchbar mt">
       <span>💬</span>
-      <input id="aiInput" placeholder="Describe your symptoms..." />
-      <button class="btn" id="aiSend">Ask</button>
-    </div>`);
+      <input id="aiInput" placeholder="Ask me anything about your health..." />
+      <button class="btn" id="aiSend">Send</button>
+    </div>
+    <div class="muted center" style="font-size:11px;margin-top:8px">Not a substitute for professional medical advice.</div>`);
 
   const send = () => { const v = $("#aiInput").value.trim(); if (v) aiAsk(v); };
   $("#aiSend").onclick = send;
   $("#aiInput").addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
   setTimeout(() => $("#aiInput") && $("#aiInput").focus(), 50);
+
+  // show whether real AI is active
+  try {
+    const st = await api("/ai/status", { auth: false });
+    $("#aiMode").innerHTML = st.ai_enabled
+      ? `<span class="pill confirmed">✨ AI mode (${esc(st.provider)})</span>`
+      : `<span class="pill pending">Basic mode</span> · set an API key for full AI answers`;
+  } catch { /* ignore */ }
 }
 
 async function aiAsk(text) {
@@ -640,20 +663,18 @@ async function aiAsk(text) {
   const sug = $("#aiSug");
   if (sug) sug.style.display = "none";
   if ($("#aiInput")) $("#aiInput").value = "";
+
+  aiHistory.push({ role: "user", content: text });
   chat.innerHTML += `<div class="ai-bubble user">${esc(text)}</div>`;
-  chat.innerHTML += `<div class="ai-bubble bot" id="aiThinking">Thinking…</div>`;
+  chat.innerHTML += `<div class="ai-bubble bot typing" id="aiThinking"><span></span><span></span><span></span></div>`;
   chat.scrollTop = chat.scrollHeight;
+
   try {
-    const r = await api("/ai/triage", { method: "POST", auth: false, body: { symptoms: text } });
-    const u = URGENCY[r.urgency] || URGENCY.routine;
-    const msgHtml = esc(r.message).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-    let html = `<div><span class="pill ${u.cls}">${u.emoji} ${u.label}</span></div>
-      <div class="mt">${msgHtml}</div>`;
-    if (r.doctors && r.doctors.length) {
-      html += `<div class="mt" style="font-weight:700;font-size:13px">Recommended doctors</div>
-        <div class="grid mt" style="gap:8px">${r.doctors.map(assistantDoctorCard).join("")}</div>`;
-    }
-    html += `<div class="muted mt" style="font-size:11px">ℹ️ ${esc(r.disclaimer)}</div>`;
+    const r = await api("/ai/chat", { method: "POST", auth: false, body: { messages: aiHistory } });
+    aiHistory.push({ role: "assistant", content: r.reply });
+    let html = mdLite(r.reply);
+    if (r.emergency) html = `<div class="pill cancelled" style="margin-bottom:6px">🚨 Emergency</div>${html}`;
+    if (r.note) html += `<div class="muted" style="font-size:11px;margin-top:6px">⚠️ ${esc(r.note)}</div>`;
     $("#aiThinking").outerHTML = `<div class="ai-bubble bot">${html}</div>`;
   } catch (e) {
     $("#aiThinking").outerHTML = `<div class="ai-bubble bot">Sorry, something went wrong: ${esc(e.message)}</div>`;
